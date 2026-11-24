@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { BaseMessage } from "langchain";
+import { AIMessage, BaseMessage } from "langchain";
 
 // Issues running in the Deno kernel prevent tracing in some cases.
 // Commented out 2026-04-04 — tracing appears to work with current packages.
@@ -11,24 +11,32 @@ import { BaseMessage } from "langchain";
  * Little setup file to provide helper functions for the notebooks.
  */
 
+declare global {
+    var displayMessage: (message: BaseMessage) => void;
+    var displayStream: (stream: AsyncIterable<[BaseMessage, never]>) => Promise<void>;
+}
+
 /**
  * Display a message in a nice format.
  * @param message The message to display.
  * @returns void
  */
 globalThis.displayMessage = (message: BaseMessage) => {
-    const icons = {
+    const icons: Record<string, string> = {
         human: "👤",
         ai: "🤖",
         tool: "🔧",
-        custom: "💡"
+        custom: "💡",
+        system: "⚙️",
+        developer: "💻"
     };
     
-    const colors = {
+    const colors: Record<string, string> = {
         human: "\x1b[36m",  // Cyan
         ai: "\x1b[35m",      // Magenta
         tool: "\x1b[33m",    // Yellow
         custom: "\x1b[31m",    // Red
+        system: "\x1b[34m",   // Blue
         reset: "\x1b[0m"
     };
     
@@ -44,7 +52,7 @@ globalThis.displayMessage = (message: BaseMessage) => {
     // Content
     if (message.content) {
         console.log(message.content);
-    } else if (message.tool_calls && message.tool_calls.length > 0) {
+    } else if (message instanceof AIMessage && message.tool_calls && message.tool_calls.length > 0) {
         console.log("Tool Calls:");
         message.tool_calls.forEach((call, idx) => {
             console.log(`  ${idx + 1}. ${call.name}()`);
